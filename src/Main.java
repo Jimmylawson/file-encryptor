@@ -40,7 +40,7 @@ public class Main{
     }
     static void encryptFile() throws Exception {
         //Implementation will come here
-        System.out.println("Enter the file you want to encrypt");
+        System.out.print("Enter the file you want to encrypt: ");
         String inputPath = in.nextLine().trim();
         File inputFile = new File(inputPath);
 
