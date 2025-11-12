@@ -1,36 +1,66 @@
+package Decryption;
+
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.logging.Logger;
 
 public class Decryption {
     private static final String ALGORITHM = "AES/GCM/NoPadding";
-    private static final int TAG_LENGTH = 128;
     private static final int IV_LENGTH = 12;
     private static final Logger logger  = Logger.getLogger(Decryption.class.getName());
+
+
+    public static class KeyAndIv {
+        public final SecretKey key;
+        public final byte[] iv;
+
+        public KeyAndIv(SecretKey key, byte[] iv) {
+            this.key = key;
+            this.iv = iv;
+        }
+    }
+
     /**
      * Loads a secret key from a file
      * @param keyFile The file containing the Base64-encoded key
      * @return The loaded secretKet
      * **/
 
-    public static SecretKey loadKeyFromFile(String keyFile) throws Exception {
-        // 1. Read all bytes from file and convert to String
-//    (The file contains Base64 text like "MTIzNDU2Nzg5MDEyMzQ1Njc4OTA=")
-        String base64Key = new String(Files.readAllBytes(new File(keyFile).toPath()));
 
-// 2. Decode the Base64 string back to the original key bytes
-//    (Converts "MTIzNDU2Nzg5MDEyMzQ1Njc4OTA=" back to the original byte array)
-        byte[] decodeKey = Base64.getDecoder().decode(base64Key);
+    public static KeyAndIv loadKeyFromFile(String keyFile) throws Exception {
+        try{
+            var lines = Files.readAllLines(Paths.get(keyFile));
+            String base64Key = null;
+            String base64Iv = null;
+            // Parse key and IV
+            for (String line : lines) {
+                if (line.startsWith("key:")) {
+                    base64Key = line.substring(4).trim();
+                } else if (line.startsWith("iv:")) {
+                    base64Iv = line.substring(3).trim();
+                }
+            }
+            if (base64Key == null || base64Iv == null) {
+                throw new IllegalArgumentException("Invalid key file format");
+            }
+            //Decode key
+            byte[] keyBytes = Base64.getDecoder().decode(base64Key);
+            SecretKey secretKey = new SecretKeySpec(keyBytes, "AES");
+            //Decode IV
+            byte[] ivBytes = Base64.getDecoder().decode(base64Iv);
 
-// 3. Create a SecretKey object from the decoded bytes
-        SecretKey secretKey = new SecretKeySpec(decodeKey, "AES");
+            return new KeyAndIv(secretKey, ivBytes);
 
-        return secretKey;
+            }catch(Exception e){
+                throw new Exception("Failed to load key from file: " + e.getMessage(), e);
+            }
 
     }
 
@@ -42,10 +72,10 @@ public class Decryption {
      * @throws Exception
      *
      * */
-    public static void decryptFile(String inputFile,String outputFile, SecretKey secretKey) throws Exception {
+    public static void decrypt(String inputFile,String outputFile, SecretKey secretKey,GCMParameterSpec ivSpec) throws Exception {
         logger.info("Starting description of file: "+ inputFile);
         try(FileInputStream fis = new FileInputStream(inputFile);
-            FileOutputStream fos = new FileOutputStream(outputFile)
+            FileOutputStream fos = new FileOutputStream(outputFile);
         ){
             //Read the IV from the begining of the file
             //IV is a reandom number used alongside the secrey key to ensure encryptin the same plaintext multiple times with
@@ -58,8 +88,8 @@ public class Decryption {
 
             //Initialize the cipher with the same parameters used for encryption
             Cipher cipher  = Cipher.getInstance(ALGORITHM);
-            GCMParameterSpec parameterSpec = new GCMParameterSpec(TAG_LENGTH, iv);
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
+
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
 
             //Decrypt the file content
             byte[] buffer = new byte[8192];

@@ -1,3 +1,5 @@
+package Encryption;
+
 import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
 import java.io.FileInputStream;
@@ -59,19 +61,23 @@ public class Encryptor {
     }
     /**
      * Saves the secret key to a file in Base64 format
-     * @param key The secret key to save
+     * @param secretKey The secret key to save
      * @param keyFile The file path where to save the key
+     * @param gcmSpec The GCMParameterSpec containing the IV
      * @throws RuntimeException if there's an error writing to the file
      */
-    public static void saveKeyToFile(SecretKey key, String keyFile) {
+    public static void saveKeyAndIv(String keyFile,SecretKey secretKey,GCMParameterSpec gcmSpec) {
         Logger logger = Logger.getLogger(Encryptor.class.getName());
         logger.info("Saving file to file: "+ keyFile);
-        // Convert the key to Base64 string
-        String base64Key = Base64.getEncoder().encodeToString(key.getEncoded());
-        
+
         try (FileWriter writer = new FileWriter(keyFile)) {
+            // Convert the key and IV to Base64 string
+            String base64Key = Base64.getEncoder().encodeToString(secretKey.getEncoded());
+            String base64Iv = Base64.getEncoder().encodeToString(gcmSpec.getIV());
+
             // Write the Base64-encoded key to the file
-            writer.write(base64Key);
+            writer.write("key: " + base64Key + System.lineSeparator() + "iv: " + base64Iv);
+            logger.info("Successfully saved key and IV to: " + keyFile);
         } catch (IOException e) {
             throw new RuntimeException("Failed to save key to file: " + e.getMessage(), e);
         }
