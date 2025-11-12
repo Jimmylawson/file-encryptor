@@ -72,7 +72,7 @@ public class Decryption {
      * @throws Exception
      *
      * */
-    public static void decrypt(String inputFile,String outputFile, SecretKey secretKey,GCMParameterSpec ivSpec) throws Exception {
+    public static void decrypt(String inputFile,String outputFile, SecretKey secretKey) throws Exception {
         logger.info("Starting description of file: "+ inputFile);
         try(FileInputStream fis = new FileInputStream(inputFile);
             FileOutputStream fos = new FileOutputStream(outputFile);
@@ -88,8 +88,9 @@ public class Decryption {
 
             //Initialize the cipher with the same parameters used for encryption
             Cipher cipher  = Cipher.getInstance(ALGORITHM);
+            var gcmSpec = new GCMParameterSpec(128, iv);
 
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec);
 
             //Decrypt the file content
             byte[] buffer = new byte[8192];

@@ -138,11 +138,11 @@ public class Main{
 
             // Create output path (remove .enc if present)
             String outputPath = inputPath.endsWith(".enc")
-                    ? inputPath.substring(0, inputPath.length() - 4)
+                    ? inputPath.substring(0, inputPath.length() - 4) + ".dec"
                     : inputPath + ".dec";
 
             // Decrypt the file
-            Decryption.decrypt(inputPath, outputPath, keyAndIv.key, new GCMParameterSpec(128, keyAndIv.iv));
+            Decryption.decrypt(inputPath, outputPath, keyAndIv.key);
 
             System.out.println("\n✅ Decryption successful");
             System.out.println("   - Decrypted file: " + new File(outputPath).getAbsolutePath());
